@@ -1,0 +1,156 @@
+"""Adapt the supported native patch event to Graphvon's scoped checks."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import sys
+import time
+from typing import Any, Sequence
+
+from .contracts import Refusal, parse_json
+from .patches import inspect_patch
+from .sources import (
+    check_checkout,
+    check_source_basis,
+    load_context,
+    observe_basis,
+)
+
+
+READ_BUDGET_SECONDS = 6.0
+CONTEXT_VARIABLE = "GRAPHVON_CONTEXT"
+
+_REFUSAL_REASONS = {
+    "event": "Graphvon requires a supported native PreToolUse apply_patch event.",
+    "context": "Graphvon requires a valid scoped context at GRAPHVON_CONTEXT.",
+    "checkout": "Graphvon could not confirm the admitted checkout boundary.",
+    "patch": "The patch is unsupported or exceeds the admitted operations and paths.",
+    "sources": "Graphvon could not confirm the current admission basis; reassess the assignment.",
+}
+
+
+def _deny(reason: str) -> dict[str, Any]:
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }
+
+
+def _within_deadline(deadline: float) -> None:
+    if time.monotonic() >= deadline:
+        raise TimeoutError
+
+
+def _event_fields(event: Any) -> tuple[Path, str]:
+    if not isinstance(event, dict):
+        raise Refusal("Expected event object.")
+    if event.get("hook_event_name") != "PreToolUse":
+        raise Refusal("Unsupported event.")
+    if event.get("tool_name") != "apply_patch":
+        raise Refusal("Unsupported tool.")
+    cwd = event.get("cwd")
+    tool_input = event.get("tool_input")
+    if not isinstance(cwd, str) or not cwd or not Path(cwd).is_absolute():
+        raise Refusal("Expected absolute working directory.")
+    if not isinstance(tool_input, dict):
+        raise Refusal("Expected native tool input.")
+    command = tool_input.get("command")
+    if not isinstance(command, str) or not command:
+        raise Refusal("Expected patch command.")
+    return Path(cwd), command
+
+
+def _check_hook() -> dict[str, Any]:
+    deadline = time.monotonic() + READ_BUDGET_SECONDS
+    phase = "event"
+    try:
+        event = parse_json(sys.stdin.read())
+        cwd, command = _event_fields(event)
+        _within_deadline(deadline)
+
+        phase = "context"
+        locator = os.environ.get(CONTEXT_VARIABLE)
+        if not locator or not Path(locator).is_absolute():
+            raise Refusal("Expected an absolute context locator.")
+        context = load_context(Path(locator))
+        _within_deadline(deadline)
+
+        phase = "checkout"
+        check_checkout(context, cwd, deadline)
+        _within_deadline(deadline)
+
+        phase = "patch"
+        inspect_patch(command, cwd, context.root, context.grants)
+        _within_deadline(deadline)
+
+        phase = "sources"
+        check_source_basis(context, deadline)
+        _within_deadline(deadline)
+        return {}
+    except TimeoutError:
+        return _deny("Graphvon's internal deadline expired; the assignment was not validated.")
+    except (Refusal, ValueError, TypeError, OSError):
+        # Exception text can contain a private locator or source payload.
+        return _deny(_REFUSAL_REASONS[phase])
+    except Exception:
+        # An unexpected adapter failure is unavailable control, never approval.
+        return _deny("Graphvon could not complete its checks; treat the control as unavailable.")
+
+
+def _positive_number(value: str) -> int:
+    try:
+        result = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("expected a positive integer") from error
+    if result < 1:
+        raise argparse.ArgumentTypeError("expected a positive integer")
+    return result
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="graphvon-preflight",
+        description="Check a native patch event, or read a public source basis.",
+    )
+    commands = parser.add_subparsers(dest="command")
+    snapshot = commands.add_parser(
+        "snapshot", help="read public sources without granting implementation authority"
+    )
+    snapshot.add_argument("--repository", required=True, help="GitHub owner/name")
+    snapshot.add_argument("--issue", required=True, type=_positive_number)
+    snapshot.add_argument("--pull", required=True, type=_positive_number)
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    arguments = _parser().parse_args(argv)
+    if arguments.command == "snapshot":
+        deadline = time.monotonic() + READ_BUDGET_SECONDS
+        try:
+            basis = observe_basis(
+                arguments.repository, arguments.issue, arguments.pull, deadline
+            )
+            _within_deadline(deadline)
+        except Exception:
+            print(
+                "Graphvon could not obtain a complete current source basis.",
+                file=sys.stderr,
+            )
+            return 1
+        json.dump(basis, sys.stdout, ensure_ascii=False, indent=2)
+        sys.stdout.write("\n")
+        return 0
+
+    json.dump(_check_hook(), sys.stdout, ensure_ascii=False)
+    sys.stdout.write("\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
