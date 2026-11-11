@@ -4,28 +4,27 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 import sys
 import time
 from typing import Any, Sequence
 
 from .contracts import Refusal, parse_json
+from .installation import resolve_installation
 from .patches import inspect_patch
 from .sources import (
     check_checkout,
     check_source_basis,
-    load_context,
     observe_basis,
 )
 
 
 READ_BUDGET_SECONDS = 6.0
-CONTEXT_VARIABLE = "GRAPHVON_CONTEXT"
+SESSION_SOURCES = frozenset({"startup", "resume", "clear", "compact", "fork"})
 
 _REFUSAL_REASONS = {
     "event": "Graphvon requires a supported native PreToolUse apply_patch event.",
-    "context": "Graphvon requires a valid scoped context at GRAPHVON_CONTEXT.",
+    "context": "Graphvon requires a valid scoped context via exact-checkout registration or an explicit GRAPHVON_CONTEXT override.",
     "checkout": "Graphvon could not confirm the admitted checkout boundary.",
     "patch": "The patch is unsupported or exceeds the admitted operations and paths.",
     "sources": "Graphvon could not confirm the current admission basis; reassess the assignment.",
@@ -75,10 +74,7 @@ def _check_hook() -> dict[str, Any]:
         _within_deadline(deadline)
 
         phase = "context"
-        locator = os.environ.get(CONTEXT_VARIABLE)
-        if not locator or not Path(locator).is_absolute():
-            raise Refusal("Expected an absolute context locator.")
-        context = load_context(Path(locator))
+        context = resolve_installation(cwd, deadline).context
         _within_deadline(deadline)
 
         phase = "checkout"
@@ -103,6 +99,45 @@ def _check_hook() -> dict[str, Any]:
         return _deny("Graphvon could not complete its checks; treat the control as unavailable.")
 
 
+def _session_start() -> dict[str, Any]:
+    deadline = time.monotonic() + READ_BUDGET_SECONDS
+    try:
+        event = parse_json(sys.stdin.read())
+        if not isinstance(event, dict) or event.get("hook_event_name") != "SessionStart":
+            raise Refusal("Expected a native SessionStart event.")
+        if not isinstance(event.get("source"), str) or event["source"] not in SESSION_SOURCES:
+            raise Refusal("Unsupported session source.")
+        cwd = event.get("cwd")
+        if not isinstance(cwd, str) or not cwd or not Path(cwd).is_absolute():
+            raise Refusal("Expected an absolute working directory.")
+        installation = resolve_installation(Path(cwd), deadline)
+        _within_deadline(deadline)
+        references = {
+            "checkout": str(installation.context.root),
+            "context": str(installation.context_path),
+            "working_record": (str(installation.working_record)
+                               if installation.working_record is not None else None),
+            "skill": str(installation.skill_path),
+        }
+        message = (
+            "Graphvon private continuation references (local session only; do not publish): "
+            + json.dumps(references, ensure_ascii=True)
+            + "\nUse $graphvon-start-work. Reconcile the current assignment, prior tool results "
+            "and actual checkout effects before continuing writes. Read current working state "
+            "only as needed; these references grant no new authority or generation. "
+            "An explicit override supplies no registered working-record reference."
+        )
+    except Exception:
+        # No exception text or partially resolved locator enters session output.
+        message = (
+            "Graphvon continuation state is unavailable. Confirm the exact checkout's private "
+            "registration or explicit GRAPHVON_CONTEXT override. Read-only investigation may "
+            "continue; covered writes require a valid reconciled assignment and the pre-tool "
+            "checks. This startup message grants no authority."
+        )
+    return {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": message}}
+
+
 def _positive_number(value: str) -> int:
     try:
         result = int(value)
@@ -116,9 +151,10 @@ def _positive_number(value: str) -> int:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="graphvon-preflight",
-        description="Check a native patch event, or read a public source basis.",
+        description="Check a native patch event, restore session references, or read a public source basis.",
     )
     commands = parser.add_subparsers(dest="command")
+    commands.add_parser("session-start", help="offer private continuation references without granting authority")
     snapshot = commands.add_parser(
         "snapshot", help="read public sources without granting implementation authority"
     )
@@ -130,6 +166,10 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = _parser().parse_args(argv)
+    if arguments.command == "session-start":
+        json.dump(_session_start(), sys.stdout, ensure_ascii=False)
+        sys.stdout.write("\n")
+        return 0
     if arguments.command == "snapshot":
         deadline = time.monotonic() + READ_BUDGET_SECONDS
         try:

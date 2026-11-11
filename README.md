@@ -9,55 +9,109 @@ The procedure is defined in
 Requirements and the proposed implementation remain in the project's GitHub
 Issues and PR descriptions.
 
-## Install and launch
+## One-time installation and project setup
 
 The initial profile uses Python 3.11 or later, Git, authenticated GitHub CLI
 read access, and local Codex hooks. The runtime probe exercised Codex CLI
 0.167.1. The Python package has no third-party runtime dependencies.
 
-From this checkout in a Bash terminal, choose a virtual environment location
-and install the console command:
+From the reviewed checkout in a Bash terminal, install the console command
+using the standard user tool environment:
 
 ```bash
-read -r -p 'Virtual environment directory: ' GRAPHVON_ENV
-python3 -m venv "$GRAPHVON_ENV"
-. "$GRAPHVON_ENV/bin/activate"
-python -m pip install .
+uv tool install .
 graphvon-preflight --help
 ```
 
-Keep the environment and private assignment records out of tracked content.
-The package installs `graphvon-preflight`; the skill and `.codex/hooks.json`
-are discovered from this checkout.
+If the tool directory is not on your normal `PATH`, use `uv tool update-shell`
+once and open a new terminal before checking the command. To refresh an existing
+installation after reviewing a new candidate, use `uv tool install --force .`.
+This installs a snapshot; source edits do not update the installed guard.
 
-Follow the skill to prepare an admitted assignment. Then supply its absolute
-record location through the launch environment, without putting the value in
-tracked configuration or a command argument:
+The repository owns the canonical skill. Install its shared projection once
+and refresh it from that source when the reviewed skill changes:
 
 ```bash
-read -r -p 'Absolute private context file: ' GRAPHVON_CONTEXT
-export GRAPHVON_CONTEXT
-codex
+mkdir -p "$HOME/.agents/skills/graphvon-start-work"
+cp .agents/skills/graphvon-start-work/SKILL.md "$HOME/.agents/skills/graphvon-start-work/SKILL.md"
 ```
 
-The launching process must provide both the installed command on `PATH` and
-`GRAPHVON_CONTEXT`. Restart by running `codex` again from this project terminal
-and verify the actual new session's discovery and private context delivery.
+Do not edit the installed projection as a second source. Its documentation
+references resolve from the bound checkout or installed Python package, not
+from the shared skill directory. The project hooks remain in
+`.codex/hooks.json`; do not install them globally. Shared tool and skill
+availability alone does not activate project hooks in unrelated repositories.
+
+Follow the skill to provision an admitted context and identify the canonical
+private working record. Register their absolute locators under the exact
+resolved Git worktree root in the user's private
+`$XDG_CONFIG_HOME/graphvon/config.toml`, defaulting to
+`~/.config/graphvon/config.toml` when `XDG_CONFIG_HOME` is unset or empty.
+An explicitly set configuration directory must be absolute. Create that file
+privately outside tracked content; preserve any other checkout registrations.
+This synthetic example documents the complete version-1 installation schema:
+
+```toml
+version = 1
+
+[projects."/absolute/resolved/checkout"]
+context = "/private/example/assignment.json"
+working_record = "/private/example/working.md"
+```
+
+Replace these synthetic values with the actual private locations. The key is
+the resolved `git rev-parse --show-toplevel` result from the intended checkout.
+Each worktree has its own key, even when it shares a Git common directory.
+Unknown fields, malformed TOML, invalid field types, non-regular configuration
+files and non-absolute locators are refused. This registration is installation
+metadata, not a task registry or an admission. The coordinator still owns the
+context, generation and reconciliation of unfinished operations.
 
 Inspect the skill's discovery in the new session and invoke
-`$graphvon-start-work`. Review project trust and the exact hook through Codex's
-normal trust flow and `/hooks`; confirm that the hook is enabled and trusted.
-Do not bypass trust. The supplied hook matches only `apply_patch`, uses a
-10-second outer timeout, and invokes the installed command. The adapter shares
-a 6-second internal deadline across its dependent checks.
+`$graphvon-start-work`. Review project trust and the exact hooks through Codex's
+normal trust flow and `/hooks`; confirm that both exact hooks are enabled and
+trusted. Do not bypass trust. `PreToolUse` matches only `apply_patch` and invokes
+`graphvon-preflight`. `SessionStart` invokes `graphvon-preflight session-start`
+for `startup`, `resume`, `clear`, `compact` and `fork`. Each uses a 10-second
+outer timeout and a 6-second internal read budget.
+
+## Daily launch and continuation
+
+After one-time setup, use the ordinary commands from the project terminal:
+
+```bash
+codex
+codex resume
+```
+
+No activation, export, wrapper or replacement launcher is required. The native
+startup handler resolves the effective working directory's Git worktree root
+and validates its context's root before offering concise private context,
+working-record and canonical skill references to the local session. It does
+not inject record contents, validate the working record's contents, rotate a
+generation or authorize work. Read the referenced state and reconcile prior
+operations and current admission before continuing writes.
+
+Missing or invalid state produces an informative startup message; read-only
+investigation remains possible. The pre-tool handler independently resolves
+the same binding and retains its context, checkout, patch and source checks.
+It denies covered writes when those checks cannot be completed. No ancestor,
+prefix, Git common-directory or implicit record search selects another entry.
+Test fresh startup, resume and compaction in the actual runtime after installing
+and trusting a changed hook; module tests alone do not establish that behavior.
 
 ## Private context and source observation
 
 The version-1 context schema and its validation are canonical in
 [contracts.py](src/graphvon/contracts.py). The skill explains who provisions
-the record and when its source basis must be reconsidered. The locator is an
-absolute path supplied only through `GRAPHVON_CONTEXT`; there is no implicit
-record discovery.
+the record and when its source basis must be reconsidered. The shared resolver
+in [installation.py](src/graphvon/installation.py) reads the explicit checkout
+registration described above. A present `GRAPHVON_CONTEXT` overrides it for
+deliberately configured launches. An empty, relative, unreadable, malformed or
+wrong-checkout override is refused without falling back to registration. A
+valid override is independent of user configuration and therefore supplies no
+registered working-record reference. Keep actual locator values out of public
+examples, command arguments, committed configuration and reports.
 
 For an implementation assignment, obtain the public basis with the read-only
 command below, replacing the repository and native numbers with the actual
@@ -70,8 +124,9 @@ graphvon-preflight snapshot --repository example/project --issue 2 --pull 4
 Capture the JSON privately as the context's `implementation.basis`. The
 snapshot reads public sources and grants no authority or review approval.
 Use `graphvon.sources.load_context` to validate a completed context before
-launch. Preparation uses the same context structure with its own admission
-source and omits `implementation` entirely.
+launch, using the installed package's Python environment or, from the matching
+source checkout, `PYTHONPATH=src python3`. Preparation uses the same context
+structure with its own admission source and omits `implementation` entirely.
 
 ## Recover after an interrupted or restarted session
 
@@ -79,9 +134,9 @@ Follow the canonical skill's
 [release and reconciliation procedure](.agents/skills/graphvon-start-work/SKILL.md#release-and-reconcile-the-assignment).
 The steps below help inspect the evidence; they do not grant a new assignment.
 
-1. Identify the surviving assignment through the explicit launch context and
-   its admission references. Match each attempted patch to its tool result.
-   Keep that projection unchanged while any result is outstanding. A lost
+1. Identify the surviving assignment through the exact checkout registration
+   or explicit override and its admission references. Match each attempted patch
+   to its tool result. Keep that projection unchanged while any result is outstanding. A lost
    response, timeout or error does not establish that no files changed.
 2. Inspect the actual checkout effects. Use `git status --short` and
    `git diff` as starting points, then inspect the complete attempted path set:
@@ -107,9 +162,9 @@ The steps below help inspect the evidence; they do not grant a new assignment.
    using its own governing instruction, effect and exact paths. It does not
    require an implementation Issue, Draft PR, public-source snapshot or
    implementation review.
-5. Launch again from the project terminal using the installation instructions
-   above. Verify skill discovery, the exact enabled and trusted hook, and
-   delivery of the intended private context in the new session. Reconcile a
+5. Launch again with ordinary `codex` or `codex resume` from the project terminal.
+   Verify skill discovery, the exact enabled and trusted hooks, and
+   the intended private continuation references in the new session. Reconcile a
    surviving unstarted assignment against current sources before continuing;
    its presence alone does not authorize a write.
 

@@ -37,8 +37,8 @@ needed by the PR reader. A URL, write permission, account name or approval statu
 alone does not establish relevance, authority or independence.
 
 Read back the native public sources using `graphvon-preflight snapshot` as
-explained in the [README](../../../README.md). Its JSON is an observation, not a
-semantic review or grant. Preserve private review evidence separately from the
+explained in the registered checkout's `README.md`. Its JSON is an observation,
+not a semantic review or grant. Preserve private review evidence separately from the
 manifest of actual public discussions. Reconcile an expected public review
 addition only when a meaningful public decision was actually posted.
 
@@ -51,11 +51,22 @@ reads establish unknown state, not absence of a change.
 ## Provision one private context
 
 The coordinator owns the active context and generation. Use the canonical
-version-1 schema in [contracts.py](../../../src/graphvon/contracts.py), and
+version-1 schema in the installed `graphvon.contracts` module (source:
+`src/graphvon/contracts.py` in the registered checkout), and
 `graphvon.sources.load_context` to validate a completed record. Never publish an
-actual private record name, locator or evidence reference in configuration,
-descriptions, examples or reports. `GRAPHVON_CONTEXT` contains an absolute path
-only in the Codex launch environment; no fallback search discovers it.
+actual private record name, locator or evidence reference in committed
+configuration, descriptions, examples or public reports. One-time installation registers the
+exact resolved Git checkout root and its context and working-record locators in
+the private user Graphvon `config.toml`. The native startup hook supplies concise
+local references; it neither reads the working record into the session nor
+authorizes work. Resolve `README.md`, the skill source and other repository
+references from that checkout, never relative to a shared installed skill copy.
+The repository skill is canonical; a shared installation is only its projection.
+
+A present `GRAPHVON_CONTEXT` is an explicit absolute-path override. An invalid
+override never falls back to registration. With no override, only the exact
+checkout registration is used; there is no parent match or record search.
+Unavailable state permits read-only investigation but withholds covered writes.
 
 Provision the common fields from the actual admission: checkout root, native
 repository identity and remote, owner, fresh generation, kind, effect, exact
@@ -69,8 +80,10 @@ resistance. Hash the exact retained admission evidence for `admission.sha256`.
 
 This synthetic preparation example illustrates construction. Replace its source,
 repository, owner, generation, effect and grants with the actual admitted values
-before creating a real context; the example is not authorization. Run from the
-checkout root after setting the private destination in `GRAPHVON_CONTEXT`.
+before creating a real context; the example is not authorization. For this
+one-time provisioning operation, run from the checkout root with
+`PYTHONPATH=src python3` after setting the private destination in
+`GRAPHVON_CONTEXT`. This is not a daily launch requirement.
 
 ```python
 from dataclasses import asdict
@@ -124,11 +137,14 @@ record and hook provide no operating-system lock or per-agent task attribution;
 the coordinator must prevent concurrent filesystem mutation. Parallel read-only
 work and genuinely isolated preparation remain possible.
 
-Follow the README's normal package installation, launch environment and trust
-steps. In a fresh `codex` launch from the project terminal, verify that this skill
-is discoverable, the exact hook is enabled and trusted, and its process receives
-the intended private context. Explicit invocation can demonstrate use; it does
-not prove automatic selection. Do not bypass trust or switch writers after a
+Follow the registered checkout README's one-time tool installation, private
+registration and normal trust steps. Daily use is plain `codex` or
+`codex resume` from the project terminal, without activation or exports.
+In a fresh launch, verify that this skill is discoverable, the exact hooks are
+enabled and trusted, and the startup
+references and pre-tool resolver select the intended private context.
+Explicit invocation can demonstrate use; it does not prove automatic selection.
+Do not bypass trust or switch writers after a
 failed control.
 
 On restart or resume, inspect the surviving assignment and reconcile prior tool
