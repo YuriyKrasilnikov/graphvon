@@ -73,6 +73,53 @@ Use `graphvon.sources.load_context` to validate a completed context before
 launch. Preparation uses the same context structure with its own admission
 source and omits `implementation` entirely.
 
+## Recover after an interrupted or restarted session
+
+Follow the canonical skill's
+[release and reconciliation procedure](.agents/skills/graphvon-start-work/SKILL.md#release-and-reconcile-the-assignment).
+The steps below help inspect the evidence; they do not grant a new assignment.
+
+1. Identify the surviving assignment through the explicit launch context and
+   its admission references. Match each attempted patch to its tool result.
+   Keep that projection unchanged while any result is outstanding. A lost
+   response, timeout or error does not establish that no files changed.
+2. Inspect the actual checkout effects. Use `git status --short` and
+   `git diff` as starting points, then inspect the complete attempted path set:
+   untracked additions, updates, deletions, both move endpoints, replacement
+   targets and new parent directories. Native patch failure can leave partial
+   effects; a diff alone omits untracked contents. Preserve the original call,
+   result and observed effects in the coordinator's private evidence before
+   cleanup or retry.
+3. If completion or ownership remains unknown, withhold dependent writes and
+   report the unresolved operation to the coordinator. Continue read-only
+   reconciliation. Do not replay the patch, replace the projection or release
+   a competing assignment to make the uncertainty disappear.
+4. Once every operation has settled, the coordinator reconciles completion or
+   explicit abandonment and preserves the evidence before retiring that
+   generation. For remaining implementation work, read the current Issue,
+   Draft description and public discussions with the snapshot command above
+   and follow the
+   skill's [implementation basis checks](.agents/skills/graphvon-start-work/SKILL.md#establish-the-implementation-basis)
+   before releasing a fresh generation. Reuse applicable review only with a
+   stated basis; source-read failure means unknown state.
+   Separately admitted preparation follows the skill's
+   [effect classification](.agents/skills/graphvon-start-work/SKILL.md#classify-the-intended-effect)
+   using its own governing instruction, effect and exact paths. It does not
+   require an implementation Issue, Draft PR, public-source snapshot or
+   implementation review.
+5. Launch again from the project terminal using the installation instructions
+   above. Verify skill discovery, the exact enabled and trusted hook, and
+   delivery of the intended private context in the new session. Reconcile a
+   surviving unstarted assignment against current sources before continuing;
+   its presence alone does not authorize a write.
+
+A handled denial holds the affected write for reassessment. An absent,
+disabled, untrusted or failed control also withholds guarded work. Preserve
+the observed outcome and let the coordinator resolve the prerequisite; do not
+switch writers or change the assignment to force a retry. The hook does not
+enforce exclusive ownership, retirement or recovery ordering: those remain
+coordinator responsibilities under the skill.
+
 ## Limits and checks
 
 The guard checks the complete supported patch before allowing it. Its initial
@@ -87,11 +134,6 @@ continue after runtime failure notices. These remain uncovered fail-open
 conditions. The hook does not control arbitrary writers or make GitHub reads
 atomic. Product integration, restart use and adoption require their own
 observed checks.
-
-If a tool result is unknown, stop dependent work and reconcile actual effects
-before retiring or replacing its assignment. A surviving record does not
-reauthorize work after restart. A failed control does not permit switching to
-another writer.
 
 Run the module checks without an installation or live mutation:
 
