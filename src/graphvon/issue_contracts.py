@@ -241,12 +241,17 @@ def parse_proposal(data: Any) -> dict:
         raise Refusal("Unsupported proposal format.")
     text(data["artifact_id"])
     text(data["record_revision"])
-    candidate = obj(data["candidate"], {"template", "title", "fields", "relationships"})
+    candidate = obj(data["candidate"], {"template", "title", "fields", "relationships"}, {"native_parent"})
     text(candidate["template"])
     text(candidate["title"], empty=True)
     if not isinstance(candidate["fields"], dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in candidate["fields"].items()):
         raise Refusal("Issue field values must be a text mapping.")
     strings(candidate["relationships"])
+    if "native_parent" in candidate:
+        parent = obj(candidate["native_parent"], {"number", "id", "node_id"})
+        if type(parent["number"]) is not int or parent["number"] <= 0 or type(parent["id"]) is not int or parent["id"] <= 0:
+            raise Refusal("Invalid native parent identity.")
+        text(parent["node_id"])
     trace = obj(data["trace"], {"source_keys", "obligations", "remaining", "unknowns", "scope", "conditions", "next_action"})
     for name in ("source_keys", "remaining", "unknowns", "conditions"):
         strings(trace[name])
