@@ -9,11 +9,15 @@ The procedure is defined in
 Requirements and the proposed implementation remain in the project's GitHub
 Issues and PR descriptions.
 
+The read-only Issue proposal checker uses the repository's declared rules and
+native Issue Form. The [Issue contract](CONTRIBUTING.md#issues) defines the
+source and semantic assessment procedure.
+
 ## One-time installation and project setup
 
 The initial profile uses Python 3.11 or later, Git, authenticated GitHub CLI
 read access, and local Codex hooks. The runtime probe exercised Codex CLI
-0.167.1. The Python package has no third-party runtime dependencies.
+0.167.1. The Issue proposal checker uses PyYAML to read native forms.
 
 From the reviewed checkout in a Bash terminal, install the console command
 using the standard user tool environment:
@@ -198,3 +202,169 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests
 
 Module checks do not establish native hook discovery, trust, restart behavior
 or semantic acceptance. Graphvon is distributed under the [MIT license](LICENSE).
+
+## Checking an Issue proposal
+
+Prepare a project basis and proposal record privately according to the
+[Issue assessment procedure](CONTRIBUTING.md#assess-a-proposal). The project
+basis is assessed independently of the individual proposal. Its sources and
+permitted templates come from the declared canonical entry; selecting an
+easier template in a request cannot replace that contract.
+
+Run the installed command with a JSON request on stdin:
+
+```bash
+graphvon-issue check < /private/example/check-request.json
+```
+
+The following paths are synthetic. Replace them with explicit private
+locations; do not commit the request or records.
+
+```json
+{
+  "version": 1,
+  "project_basis": "/private/example/project-basis.json",
+  "proposal": "/private/example/proposal.json",
+  "mode": "working"
+}
+```
+
+`working` reads repository files from the named checkout and reports
+`working_candidate`. `installed` reads repository files through authenticated
+GitHub GET requests at the observed default-branch commit and reports
+`installed_profile`. It does not fall back to local files when an installed
+form is absent. Both modes confirm the checkout's `origin` and native GitHub
+repository identity. Private local sources remain explicitly selected local
+files in either mode. Sources and comments are observations, not an atomic
+transaction with subsequent changes.
+
+### Project basis format
+
+The version-1 JSON object contains exactly these fields:
+
+| Field | Content |
+|---|---|
+| `version` | `1` |
+| `root` | Absolute checkout root |
+| `repository` | `{ "name": "example/project", "id": "R_native_id" }` |
+| `canonical_entry` | `{ "source": "rules", "fragment": "issues" }`; the source key identifies the declared repository entry |
+| `sources` | Source descriptions below |
+| `allowed_templates` | Source keys identifying permitted repository Issue Forms |
+| `scope` | The assessed scope, such as `issue_proposal` |
+| `assessment` | Assessment of this projection against its original sources |
+
+Each source has `key`, `kind`, `location`, `sha256`, `applicability`, `basis`,
+`owner` and `status`. Keys are unique. `basis` explains applicability; `owner`
+and `status` retain provenance rather than grant authority. Applicability is
+`required`, `not_applicable` or `unknown`; the latter two require their stated
+basis. Unknown applicability keeps coverage partial. The canonical entry is
+required. The selected template must also be applicable, and all required
+sources must appear in the proposal's trace.
+
+Supported source kinds are:
+
+- `repository_file`: `location` is a repository-relative path. Working files
+  must resolve inside the checkout. Installed files come from one pinned
+  default-branch commit.
+- `local_file`: `location` is an explicit absolute private path.
+- `github_issue`: `location` is the Issue number in the bound repository.
+  Its observed content includes the native identity, title, body and the
+  complete normalized discussion. A PR is not accepted as this source type.
+
+File fingerprints are SHA-256 of the UTF-8 text, preserving line endings.
+`graphvon.issue_contracts.text_digest` computes them. A native Issue's text
+representation is provided by `SourceReader.read`; do not substitute an Issue
+number or modification timestamp for its content. Read failures and changed
+fingerprints are reported separately from known non-applicability.
+
+The project `assessment` contains `subject_sha256`, `provenance`, `scope`,
+`conclusion` and `limits`. Its fingerprint is computed by
+`graphvon.issue_contracts.project_subject` over the basis excluding this
+assessment. `conclusion` is `supported`, `discrepancy` or `unknown`; `limits`
+is a list of distinct statements. Record a supported judgment only after the
+assessment actually establishes it. Computing a fingerprint or copying these
+fields does not establish authority, completeness or independent review.
+
+### Proposal format
+
+The proposal has `schema_version: 1`, a stable `artifact_id`, a separate
+`record_revision`, `candidate`, `trace` and `assessment`. Optional `operation`
+and `observation` bookkeeping is neither interpreted nor changed by `check`.
+
+The candidate contains `template` (a permitted source key), `title`, `fields`
+(a mapping of form IDs to text), and `relationships` (distinct descriptions
+of the intended relationships). Relationships require semantic assessment;
+this checker does not create or observe native graph edges. Include necessary
+public relationships in the appropriate form value so the rendered Issue is
+self-contained.
+
+The trace contains:
+
+- `source_keys`, `scope`, `next_action` and `conditions`;
+- `obligations`, each with a unique `id`, `sources`, `fields`, `coverage` and
+  `rationale`; optional `decision_sources` identify accepted decisions behind
+  derived obligations;
+- `remaining` and `unknowns`, retaining the unfulfilled or unresolved parts.
+
+The reference/condition/remainder lists contain distinct strings. Obligation
+coverage is `covered`, `partial`, `outside` or `unknown`. The checker validates
+references and keeps the supplied meaning separate from structural evidence.
+It cannot discover an omitted original requirement merely from a complete
+table. The source-to-trace assessment must do that work.
+
+Set `assessment` to `null` before semantic assessment. A completed check
+returns `subject_sha256` for the observed content, sources, selected contract,
+trace scope and next action. After the actual assessment, retain that basis
+with `provenance`, `scope`, `limits`, and four separate judgments:
+`preservation`, `definition`, `readiness` and `publication`. Each judgment has
+`result` and `reasons`; readiness also names its `action`, matching the trace's
+`next_action`. Results are `supported`, `discrepancy`, `unknown` or
+`not_assessed`. Changing bookkeeping does not change this subject; changing
+relevant content or sources requires reassessing the affected judgment.
+
+### Supported forms and output
+
+The initial native-form profile accepts top-level `name`, `description`,
+`body` and optional `title`. Body elements are `markdown` instructions or
+`textarea` fields with unique IDs using ASCII letters, digits, hyphens and
+underscores. Distinct IDs may have the same label. Textareas support `label`, `description`,
+`placeholder`, `value`, `render` and `validations.required`. Unsupported
+widgets or metadata, ambiguous YAML keys and unsafe YAML constructions are
+reported rather than silently discarded. Instructions and placeholders are
+not submitted content; defaults are used when a value is omitted. The
+canonical entry uses an ATX Markdown heading outside fenced code blocks.
+Closing fences must use the opening character with sufficient length and only
+trailing spaces or tabs. A fence-like line with trailing text inside a code
+block does not expose subsequent example headings as canonical sections.
+
+The JSON report separates `structure`, `source_coverage` and
+`semantic_assessment`. `matches_subject` means the supplied assessment applies
+to the checked basis; the checker has not independently established its truth.
+An assessment may match while declaring a discrepancy or an unresolved next
+action. `consistent_with_assessed_basis` concerns the declared source set,
+not completeness of all possible requirements. There is no general approval.
+
+The complete report is private working information. `declared_trace` retains
+the supplied scope, named next action, conditions, obligations and their
+declared coverage, remainder and unknowns. `semantic_assessment` retains the
+assessed scope and supplied results together with judgment reasons, limits,
+provenance and readiness action. `source_coverage.project_assessment` retains
+the project-basis assessment's scope, conclusion and limits. These are supplied
+judgments, not newly established machine conclusions. If a source or form
+cannot be checked, the report preserves this context with the unresolved
+applicability rather than silently dropping the limits of an earlier judgment.
+
+`public_payload` contains only the rendered title and body. It is a candidate
+for assessment, not publication permission. A private note inserted into a
+form value still requires the publication judgment to detect it; an allowlist
+of output fields does not detect semantic leaks. The rest of the report,
+including trace details, judgment reasons, source keys and assessment
+fingerprints, must remain private. It must not be pasted into public
+descriptions as a substitute for useful results. Private diagnostic context is
+never used to fill missing public fields automatically.
+
+Exit status `0` means a report was produced, including any negative or partial
+results. Status `2` means the supported request could not be processed. The
+command makes no record, repository, GitHub or runtime-configuration writes;
+it does not implement `create`, `reconcile` or a new publication hook. Read the
+report's separate conclusions before deciding the next permitted action.

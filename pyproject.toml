@@ -9,10 +9,11 @@ description = "A scoped start-work preflight for native Codex patches"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
-dependencies = []
+dependencies = ["PyYAML>=6.0.3,<7"]
 
 [project.scripts]
 graphvon-preflight = "graphvon.hook:main"
+graphvon-issue = "graphvon.issue_check:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
