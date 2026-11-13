@@ -90,6 +90,25 @@ class LocalReader(SourceReader):
         pass
 
 
+class ParentCandidateTests(unittest.TestCase):
+    def test_parent_identity_is_typed_and_bookkeeping_does_not_affect_subject(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = parse_project(make_project(root))
+            proposal = make_proposal()
+            reader = LocalReader(project, "working")
+            first = check(project, parse_proposal(proposal), "working", reader)["subject_sha256"]
+            proposal["candidate"]["native_parent"] = {"number": 1, "id": 10, "node_id": "I_parent"}
+            second = check(project, parse_proposal(proposal), "working", reader)["subject_sha256"]
+            self.assertNotEqual(first, second)
+            proposal["operation"] = {"opaque": "legacy bookkeeping"}
+            proposal["observation"] = ["uninterpreted"]
+            self.assertEqual(second, check(project, parse_proposal(proposal), "working", reader)["subject_sha256"])
+            proposal["candidate"]["native_parent"]["id"] = True
+            with self.assertRaises(Refusal):
+                parse_proposal(proposal)
+
+
 def assess(project, proposal, root, **results):
     basis = parse_project(project)
     report = check(basis, parse_proposal(proposal), "working", LocalReader(basis, "working"))

@@ -203,6 +203,68 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests
 Module checks do not establish native hook discovery, trust, restart behavior
 or semantic acceptance. Graphvon is distributed under the [MIT license](LICENSE).
 
+## Creating and reconciling an Issue
+
+`graphvon-issue create` reads one JSON request from standard input. Supply an
+absolute private project-basis path and proposal path, the proposal's current
+`record_revision`, and publication permission bound to the assessed subject:
+
+```json
+{
+  "version": 1,
+  "project_basis": "/private/example/project.json",
+  "proposal": "/private/example/proposal.json",
+  "expected_record_revision": "revision",
+  "authorization": {
+    "source": "private permission reference",
+    "subject_sha256": "assessed subject fingerprint",
+    "effect": "create_issue"
+  }
+}
+```
+
+Optionally select a native parent in the proposal candidate as
+`{"number": 1, "id": 123, "node_id": "I_native"}` under `native_parent`.
+This selection is part of the assessed subject. The numeric `id` is the native
+Issue ID, not its number. Creation checks installed sources and requires an
+applicable assessment supporting preservation, publication and readiness for
+`create_issue`; unresolved definition does not by itself prevent a supported
+readiness judgment. The permission reference and judgments remain procedural:
+their presence and fingerprints cannot establish their authority or truth.
+
+One coordinator owns each private record. There is no concurrent-writer lock.
+Settle any prior process before continuing. Intent is persisted as `prepared`;
+the `sending` state is persisted and synchronized before the one native POST.
+If a prepared operation survives interruption, the same request may continue
+with its current revision and `"owner_settled": true`, after ownership is
+settled. It repeats current source, assessment, permission and parent checks;
+changed intent is refused. A `sending` outcome may have created an Issue and
+must not be retried. A definite native rejection is recorded separately from
+an unknown response. No created Issue is automatically closed or deleted.
+After a definite rejection, a separately selected new attempt uses the current
+record revision, `"owner_settled": true`, and a `rejection_resolution`
+reference recording the assessment of the cause and current permission. The
+previous rejection remains in the private record. This does not apply to an
+uncertain send.
+
+`graphvon-issue reconcile` takes `version`, `proposal` and
+`expected_record_revision`. It performs native GETs and private record updates
+only. If no response identity survived, it can also take a `candidate` with
+native `number`, `id` and `node_id`, and a `resolution_evidence` reference
+establishing attribution. Matching content alone does not establish that
+attribution. Reconciliation retains observations and discrepancies separately;
+confirmation requires matching object content and the selected native parent
+when one was requested, plus persistence of that result. Source observations
+and native operations are not one atomic transaction. File and directory
+synchronization applies to the supported ordinary local POSIX file profile,
+not every possible storage failure. A persistence error leaves its outcome
+unknown: inspect the record and retain any returned native identity.
+
+The public request contains only title, body and an optional parent ID. The
+private trace, assessment and permission are never included in that payload.
+Other ways to create or modify Issues are not intercepted. Confirmation of an
+Issue does not establish semantic acceptance of the methodology.
+
 ## Checking an Issue proposal
 
 Prepare a project basis and proposal record privately according to the

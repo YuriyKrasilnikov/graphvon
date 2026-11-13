@@ -250,10 +250,16 @@ def check(project: ProjectBasis, proposal: dict, mode: str, reader: SourceReader
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Check an Issue proposal without publishing or updating records.")
-    parser.add_argument("operation", choices=["check"])
-    parser.parse_args(argv)
+    parser = argparse.ArgumentParser(description="Check, create or reconcile an Issue proposal.")
+    parser.add_argument("operation", choices=["check", "create", "reconcile"])
+    operation = parser.parse_args(argv).operation
     try:
+        if operation != "check":
+            from .issue_publish import create, reconcile
+            request = parse_json(sys.stdin.read())
+            result = create(request) if operation == "create" else reconcile(request)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
         request = obj(parse_json(sys.stdin.read()), {"version", "project_basis", "proposal", "mode"})
         if type(request["version"]) is not int or request["version"] != 1:
             raise Refusal("Unsupported proposal-check request.")
@@ -262,7 +268,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(json.dumps(check(project, proposal, request["mode"]), ensure_ascii=False, indent=2))
         return 0
     except (Refusal, OSError, ValueError, TypeError, RecursionError):
-        print(json.dumps({"error": "The proposal check could not read a valid supported input; no mutation was performed."}))
+        message = ("The proposal check could not read a valid supported input; no mutation was performed."
+                   if operation == "check" else
+                   "The requested operation could not be completed; inspect the private record before continuing.")
+        print(json.dumps({"error": message}))
         return 2
 
 

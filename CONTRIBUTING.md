@@ -69,6 +69,9 @@ internal term.
 `graphvon-issue check` checks the declared sources, supported form and binding
 of a supplied assessment. It does not perform the semantic assessment above,
 grant publication authority, create an Issue or update the stored proposal.
+The separate create and reconcile operations use the assessed proposal and
+private operation record as described in the README. A supported result is
+not a semantic assessment or independent evidence of publication authority.
 Its current form profile supports `markdown` instructions and `textarea`
 fields. Unsupported form elements are reported explicitly.
 
