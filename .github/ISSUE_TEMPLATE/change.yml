@@ -1,0 +1,39 @@
+name: Change
+description: Describe the required result and how it will be accepted.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        State the required outcome using the project's contributing rules.
+        Identify unresolved questions without presenting a proposed solution as a requirement.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Goal and required behavior
+      description: Explain the problem and the behavior that should result.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and conditions
+      description: Include applicable constraints, exclusions and conditions.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Describe how the requested outcome can be evaluated.
+    validations:
+      required: true
+  - type: textarea
+    id: relationships
+    attributes:
+      label: Related work and remaining obligations
+      description: Explain relevant task relationships and any part remaining elsewhere.
+  - type: textarea
+    id: questions
+    attributes:
+      label: Open questions
+      description: State material unknowns and the decisions they affect.
