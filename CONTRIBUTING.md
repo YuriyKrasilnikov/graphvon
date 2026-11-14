@@ -19,6 +19,16 @@ Private traces and supplied assessments retain their sources, scope, reasons and
 limits. Native observations and mechanical checks do not establish semantic
 acceptance or authorize a write.
 
+## Evidence applicability
+
+Use `graphvon-evidence check` to inspect the relationship between retained
+assessed plans, explicit committed changes, evidence selections, and a scoped
+claim. Preserve original evidence subjects and assess continuity when a source
+reference changes. Record actual execution and acceptance separately from
+planned work. A mechanically consistent report does not establish semantic
+adequacy, reviewer authority, or acceptance. See the README for the input and
+report boundaries.
+
 ## Git push privacy
 
 An explicitly adopted checkout can use the local pre-push check described in
