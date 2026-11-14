@@ -415,6 +415,78 @@ a current matching open Draft and applicable named-action judgments. Reports
 keep unavailable inputs, negative supplied judgments and local diagnostics
 separate. Exit 0 means a report was produced, not that the plan was accepted.
 
+## Checking evidence against a committed change
+
+`graphvon-evidence check --input /absolute/path/report.json` reads a private
+UTF-8 JSON input and writes a report to standard output. It does not run tests,
+change records, publish content, or decide acceptance. Exit 0 means a report was
+produced, including partial reports; 2 means an unreadable or invalid root input;
+3 means an unexpected internal failure. None grants permission or acceptance.
+
+The version-1 root contains `scope`, `upstream`, `change`, `selections`,
+`observations`, `correspondence`, `claim`, `joint_assessment`, and `decision`.
+`upstream` names absolute ordinary files `project`, `issue`, and `draft`, a
+`current_source_mode` of `working` or `installed`, and an `applicability`
+assessment. These files use the existing Draft-check contracts and retain their
+historical assessment bindings. The checker observes current governing and
+native sources separately; closing an Issue or merging a PR does not replace
+the historical plan with a new implementation-readiness judgment.
+
+`change` names an absolute Git `root` and full `base_commit` and `result_commit`
+object IDs. The report compares their trees without rename detection, fetch,
+external diff, checkout, or repair. Entry paths are represented as hex-encoded
+bytes so arbitrary Git path names remain unambiguous. Inherited Git repository
+and object-directory routing variables do not redirect the named repository.
+
+Each selection has an `id`, `original` and `current` references, `retained_text`,
+and `continuity` assessment. References contain an absolute `locator`, a
+`selector`, and declared `provenance`. Selectors are `{ "kind": "whole" }`,
+`{ "kind": "exact", "start": 0, "end": 4 }` (Unicode offsets), or
+`{ "kind": "markdown_section", "heading": "Evidence" }`. The original
+reference and retained text identify the original observation. A changed
+reference requires an applicable supported continuity assessment even when
+the selected text matches. Changed content requires a successor observation;
+continuity cannot make it the original. Appending outside a selected range does
+not change that selection. Declared provenance is not authenticated.
+
+An observation has `id`, `selection_id`, `kind` (`planned`,
+`reported_execution`, `native_observation`, or `assessment`),
+`original_subject` (`{ "kind": "commit", "commit": "<full object ID>" }`
+or `{ "kind": "retained", "description": "..." }`), `result`, `conditions`,
+`limits`, and `applications`. Each application has a `scope` containing
+`obligation_ids`, `constraint_ids`, and `property`, plus `current_conditions`
+and an `assessment`. The declared observation kind is preserved in its
+identity; descriptive property text does not select an execution policy. What
+evidence a claim needs remains assessed. Execution is not required for every
+claim; a document-only change can be assessed directly.
+
+`correspondence` contains `effects`, `changes`, and `assessment`. An effect
+disposition has `effect_id`, `disposition`, `change_ids`, `observation_ids`,
+and `reason`; a change disposition has `change_id`, `effect_ids`, and
+`justification`. The report identifies missing mappings. `claim` contains a
+`conclusion`, `obligations`, `constraints`, `conditions`, `remainder`, and
+`limits`. Each disposition names its `id`, `disposition`, `reason`, and
+`observation_ids`, whose entries are `{ "id": "observation", "application": 0 }`.
+Obligation and constraint dispositions also have a `remainder` string.
+Enumerated IDs come from the imported Issue; effects come from the Draft.
+
+Assessments are `null` or objects with `subject`, `result` (`supported`,
+`discrepancy`, or `unknown`), `provenance`, `reasons`, and `limits`. A first
+report supplies candidate subjects; a later input can retain judgments on those
+subjects. The checker reports applicability, not whether a judgment is true.
+`joint_assessment` binds the claim subject. An optional decision has
+`claim_subject`, `joint_assessment_subject`, `outcome`, `authority`,
+`provenance`, `reasons`, and `limits`. A prior decision remains visible as
+stale if its claim changes. The report keeps historical binding separate from
+current usability: stale, unavailable, negative, or unassessed prerequisites
+leave dependent conclusions unresolved even when the old claim or decision
+still matches. Correspondence binds its cited observation bases; claims bind
+their exact cited observation and application pairs. Uncited observations and
+applications do not change unrelated bindings or support. The private report includes supplied
+declarations and typed relationship edges alongside observed facts. Inputs,
+assessments, and output can contain private information and need their own
+publication review.
+
 ## Checking an Issue proposal
 
 Prepare a project basis and proposal record privately according to the
