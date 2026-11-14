@@ -265,6 +265,63 @@ private trace, assessment and permission are never included in that payload.
 Other ways to create or modify Issues are not intercepted. Confirmation of an
 Issue does not establish semantic acceptance of the methodology.
 
+## Checking Git push privacy
+
+`graphvon-push` can inspect pushes from an explicitly adopted ordinary complete
+checkout for declared private UTF-8 literals. It uses the local default
+pre-push hook slot, without changing global Git configuration. The private
+policy selects actual literals through substantive review; the policy does not
+grant publication authority. Applying it to every destination from an adopted
+checkout, including local and private remotes, is a conservative project choice.
+
+A policy is an explicitly selected ordinary private JSON file. This example is
+synthetic; replace every value with reviewed project-specific information:
+
+```json
+{
+  "version": 1,
+  "checkout": "/absolute/example-checkout",
+  "destinations": "all",
+  "owner": "example owner",
+  "authority": [{"locator": "private reference", "description": "reviewed scope"}],
+  "protected_literals": [{"id": "example", "value": "SYNTHETIC-PRIVATE-TOKEN",
+    "owner": "example owner", "sources": [{"locator": "private reference", "description": "source"}],
+    "applicability": "example scope", "retirement_condition": "reviewed retirement"}]
+}
+```
+
+`graphvon-push check --policy PATH --remote-name NAME --remote-location LOCATION`
+run from the checkout root reads Git's pre-push update lines from standard input. This standalone check
+does not establish installation coverage. `graphvon-push install` reads a JSON
+request containing `version`, absolute `checkout`, absolute `policy` and an
+`intent`: `create`, `verify`, `finish_install` or `update_policy`. All intents
+except `create` require `expected_installation_id`. `graphvon-push uninstall`
+reads `version`, `checkout`, `expected_installation_id` and `intent` (`remove`
+or `finish_removal`). These operations need their ordinary scoped authority.
+
+The installed launcher verifies its checkout, owned binding, launcher identity
+and current policy before inspecting an adopted push. Lifecycle operations
+distinguish verification, completion of interrupted installation or removal,
+and deliberate policy updates; foreign or modified hooks are preserved. A
+different linked worktree is not silently adopted. Configured hook paths,
+existing foreign hooks and unsupported repository states are refused.
+
+The supported inspection reads the conservative new-object closure excluding
+only complete old closures supplied by the push. It inspects raw commit and tag
+metadata, blob bytes, tree entry names and reconstructed paths, plus destination
+refs. New branches can rescan already-public history. SHA-1 and SHA-256 Git
+repositories are supported; shallow, promisor, replacement and alternate object
+stores are refused. It does not fetch, run filters or follow symlinks. A symlink's
+stored target is inspected; external submodule and LFS contents are not.
+
+Exit 0 means a supported scan found no literal or a linked worktree was not
+adopted; the report distinguishes `checked` and `not_adopted`. Exit 1 means a
+declared literal matched. Exit 2 means inspection or lifecycle was invalid,
+unsupported or unavailable. Diagnostics do not print the protected values or
+destination locations. A clean result is not a semantic privacy review,
+publication authority, remote success or historical cleanup. The hook does not
+intercept other publication routes or a push that bypasses it.
+
 ## Checking a Draft plan
 
 `graphvon-draft check` reads a versioned JSON request from standard input. It

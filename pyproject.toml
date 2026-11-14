@@ -15,6 +15,7 @@ dependencies = ["PyYAML>=6.0.3,<7"]
 graphvon-preflight = "graphvon.hook:main"
 graphvon-issue = "graphvon.issue_check:main"
 graphvon-draft = "graphvon.draft_check:main"
+graphvon-push = "graphvon.push_check:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
