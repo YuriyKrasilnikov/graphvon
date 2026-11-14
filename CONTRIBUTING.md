@@ -1,5 +1,24 @@
 # Contributing
 
+## Pull requests
+
+Use the [pull request template](.github/pull_request_template.md) as the native
+scaffold. Explain the covered outcomes and linked Issues, the proposed approach
+and rationale, relevant alternatives, and remaining obligations. Include
+material interfaces, dependencies and order, assumptions, interactions, risks,
+compatibility, implementation steps and distinguishing checks. Separate actual
+changes and evidence from planned verification. Apply these details when they
+matter to understanding and assessing the change; neither a fixed length nor
+filled headings establish substantive adequacy. Keep public content in English
+and understandable without private traces or working assessments.
+
+Assess the plan against its applicable Issue contract, governing sources and
+conditions. Keep local correspondence, upstream applicability, shared
+constraints, publication suitability, definition and action readiness distinct.
+Private traces and supplied assessments retain their sources, scope, reasons and
+limits. Native observations and mechanical checks do not establish semantic
+acceptance or authorize a write.
+
 ## Issues
 
 This section is the authoritative entry for Graphvon's Issue proposal rules.
