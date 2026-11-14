@@ -265,6 +265,99 @@ private trace, assessment and permission are never included in that payload.
 Other ways to create or modify Issues are not intercepted. Confirmation of an
 Issue does not establish semantic acceptance of the methodology.
 
+## Checking a Draft plan
+
+`graphvon-draft check` reads a versioned JSON request from standard input. It
+does not modify its private records or remote objects. Its paths must identify
+explicit private files, and `mode` is `working` or `installed`:
+
+```json
+{
+  "version": 1,
+  "project_basis": "/private/example/draft-project.json",
+  "issue_contract": "/private/example/issue-contract.json",
+  "draft": "/private/example/draft.json",
+  "mode": "working"
+}
+```
+
+The project basis contains the Issue checker project-basis fields and a
+`profiles` array. Each profile has a permitted `template` source key and
+`sections`; each section has `heading`, boolean `required` and `rule_refs`.
+The assessment binds the entire profile. Template headings and the declared
+profile must agree; source authority and whether the profile correctly projects
+the rules remain substantive assessments.
+
+The Issue contract has `schema_version`, `artifact_id`, `record_revision`,
+`repository`, `issue`, `scope`, `sources`, `conditions`, `obligations`,
+`shared_constraints`, `remaining`, `unknowns` and `assessment`. Its `issue`
+contains `number`, `node_id` and the native Issue `source` key. Conditions have
+`id`, `statement`, `source_refs`; obligations add `condition_ids` and
+`acceptance`; shared constraints add `obligation_ids` and `condition_ids`.
+The optional assessment binds the Issue subject and separately records
+preservation, publication, and definition and adequacy for each named action.
+It also contains provenance, scope, limits and an optional superseded assessment.
+
+The Draft record contains `schema_version`, `artifact_id`, `record_revision`,
+`candidate`, `trace` and nullable `assessment`. The candidate contains
+`template`, `title`, `body`, `issue` and nullable `native_pr`; native identities
+use `number` and `node_id`. The trace contains `scope`, an `action` object with
+`kind` (`discuss`, `publish`, or `implement`) and `description`, `source_keys`,
+`conditions`, `unknowns`, `remaining`, `obligations`, `effects` and
+`constraints`. Obligation rows hold `issue_obligation`, `coverage`, `plan_refs`,
+`verification` and `remainder`. Effects hold `id`, `plan_refs`, `kind`,
+`issue_obligations`, `source_refs` and `rationale`. Constraint rows hold
+`issue_constraint`, `effect_ids`, `plan_refs`, `planning_witness`,
+`planned_verification` and `remaining_conditions`.
+
+Source references use `source` (a `project:` or `issue:` namespaced key) and a
+`selector`. A selector has `kind` (`whole`, `exact`, or `markdown_section`)
+and `target` (`source_text` or native `issue_body`). Exact selectors add
+`start`, `end` and `text`; Markdown section selectors add `heading`. Offsets are
+zero-based Unicode code-point offsets into the exact selected text. Native
+Issue-body selection remains bound to the complete native Issue source and its
+discussion. Draft body references contain `heading`, `start`, `end` and `text`
+and select the exact unnormalized body under a unique level-two heading.
+
+Draft assessments bind separate local and composition subjects and contain
+`provenance`, `scope`, `local_preservation`, `justification`, `definition`,
+`joint_constraints`, `publication`, `readiness` and `limits`. Each judgment
+contains a result and reasons; readiness also names the exact action. The joint
+judgment is bound to the composition subject and assesses compatibility of the
+scoped contracts, conditions and shared constraints. The checker does not infer
+compatibility from scope names. Matching fingerprints are not substantive
+assessments or permission to act.
+
+Readiness may contain a `native_context` receipt with `subject_sha256`,
+`basis`, `provenance`, `scope`, `applicability` and `limits`. The basis retains
+the normalized repository, Issue and PR identities, lifecycle, title and body,
+head and base repository/ref/commit, and the complete observed discussion
+fingerprint envelopes. Each envelope has `id`, `updated_at`, `submitted_at` and
+`content_sha256`; its fingerprint binds the adapter's content representation,
+but cannot reconstruct an earlier discussion or establish its meaning.
+
+The receipt subject binds the exact named action, assessment scope, computed
+local and composition subjects, and normalized native context. Implementation
+readiness requires a supported applicable receipt and a matching open Draft.
+For discussion and publication an absent receipt means candidate-only
+readiness; a supplied receipt binds that action to the observed native context.
+The report identifies changed context components mechanically. Changes require
+an applicability decision for the affected action, not automatic invalidation
+of unchanged local judgments or automatic reapproval. Reaffirmation and prior
+evidence retention remain separate assessment work; the checker writes none.
+
+The supported Markdown profile uses unique plain ATX level-two section
+headings, recognizes fenced blocks and comments, and reports unsupported
+headings or malformed constructs. Structural findings establish neither plan
+quality nor requirement preservation. Installed mode uses observed
+default-branch sources without a working-file fallback; working mode supports
+review of proposed local rules and templates. Native Issue and optional PR
+observations use two GET passes, not an atomic snapshot. A private candidate
+does not imply an existing PR. Readiness for implementation additionally needs
+a current matching open Draft and applicable named-action judgments. Reports
+keep unavailable inputs, negative supplied judgments and local diagnostics
+separate. Exit 0 means a report was produced, not that the plan was accepted.
+
 ## Checking an Issue proposal
 
 Prepare a project basis and proposal record privately according to the
