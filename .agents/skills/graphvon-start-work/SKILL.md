@@ -157,6 +157,12 @@ must preserve this stop boundary.
 
 ## Keep the claim bounded
 
+For a checkout explicitly adopted for Git push inspection, use the
+[publication guidance](../../../CONTRIBUTING.md#git-push-privacy) and the
+documented `graphvon-push` lifecycle. A standalone check does not establish
+that the installed launcher is active; other publication routes still need
+their applicable review.
+
 The hook checks the complete supported native `apply_patch` operation. Its
 initial profile is local POSIX paths without links, special files or concurrent
 filesystem mutation. An admitted task outside that profile requires explicit

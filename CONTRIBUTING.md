@@ -19,6 +19,27 @@ Private traces and supplied assessments retain their sources, scope, reasons and
 limits. Native observations and mechanical checks do not establish semantic
 acceptance or authorize a write.
 
+## Git push privacy
+
+An explicitly adopted checkout can use the local pre-push check described in
+the README to inspect supported Git publications for declared private literals.
+Choose and review actual private values from their authoritative sources; do not
+place them in tracked configuration, examples, diagnostics or ignore files.
+Applying one policy to every destination from the adopted checkout, including
+local and private remotes, is a conservative project design choice. Declaring a
+policy does not grant publication authority.
+
+Standalone inspection does not establish installation coverage. The installed
+launcher verifies its checkout, owned binding, launcher identity and current
+policy before checking an adopted push. Lifecycle operations distinguish
+verification, interrupted installation or removal, and deliberate policy updates;
+foreign or modified hooks are preserved.
+
+The check detects exact declared literals in its documented Git-object scope.
+Continue independent substantive review of public material and use separate
+controls for other publication routes. A clean scan does not establish semantic
+privacy, remote success, historical cleanup or whole-methodology acceptance.
+
 ## Issues
 
 This section is the authoritative entry for Graphvon's Issue proposal rules.
