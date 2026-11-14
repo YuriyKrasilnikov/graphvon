@@ -13,6 +13,10 @@ The read-only Issue proposal checker uses the repository's declared rules and
 native Issue Form. The [Issue contract](CONTRIBUTING.md#issues) defines the
 source and semantic assessment procedure.
 
+For the connected route from requirements to evidence and acceptance, read the
+[methodology guide](docs/method.md). The [Wiki](https://github.com/YuriyKrasilnikov/graphvon/wiki)
+is a derived reader entry when available; the repository guide works directly.
+
 ## One-time installation and project setup
 
 The initial profile uses Python 3.11 or later, Git, authenticated GitHub CLI

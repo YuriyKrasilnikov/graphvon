@@ -1,5 +1,15 @@
 # Contributing
 
+## Documentation
+
+The [methodology guide](docs/method.md) explains the relationships between
+requirements, proposals, changes, evidence and acceptance. Issue and PR rules
+remain here, forms and templates own their input structure, the README owns
+operational instructions, and the repository skill owns its start-work
+procedure. Update the applicable canonical source first. The Wiki is a manually
+maintained derived view: identify its source revision and assess affected
+content and links when updating it.
+
 ## Pull requests
 
 Use the [pull request template](.github/pull_request_template.md) as the native
